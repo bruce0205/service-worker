@@ -1,0 +1,116 @@
+<html>
+
+<head>
+  <title>Express HTML</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
+  <script src="/jquery.min.js"></script>
+  <link rel="manifest" href="/manifest.json">
+  <link rel="stylesheet" href="/bootstrap.min.css">
+  <link rel="stylesheet" href="/bootstrap-theme.min.css">
+  <script src="/bootstrap.min.js"></script>
+  <style>
+    html {
+      overflow-y: hidden;
+    }
+
+    .container-full {
+      margin: 0 auto;
+      width: 100%;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container-full">
+    <nav class="navbar navbar-inverse navbar-static-top">
+      <div class="container">
+        <a class="navbar-brand" href="/">Express HTML</a>
+        <ul class="nav navbar-nav">
+          <li class="active">
+            <a href="/">Home</a>
+          </li>
+          <li>
+            <a href="/about">About</a>
+          </li>
+          <li>
+            <a href="/sitemap">Sitemap</a>
+          </li>
+          <li id="notification" class="hidden">
+            <a style="cursor: pointer" id="reload">Update</a>
+          </li>
+        </ul>
+      </div>
+    </nav>
+    <div class="jumbotron" style="padding:40px;">
+      <h1>Hello, world! 74</h1>
+      <img src="./dice2.png" height="150" />
+      <p><a class="btn btn-primary btn-lg" href="#" role="button">Learn more</a></p>
+    </div>
+  </div>
+
+  <script>
+    let register
+    let newWorker
+    let refreshing
+    let notification = document.getElementById('notification');
+
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js') // 註冊 Service Worker
+        .then(function (reg) {
+          register = reg
+          reg.installing; // the installing worker, or undefined
+          reg.waiting; // the waiting worker, or undefined
+          reg.active; // the active worker, or undefined
+
+          if (reg.waiting) {
+            console.log('register waiting working')
+            newWorker = reg.waiting
+            notification.className = 'show';
+          }
+
+          reg.addEventListener('updatefound', () => {
+            // A wild service worker has appeared in reg.installing!
+            console.log('updatefound')
+            newWorker = reg.installing;
+            console.log('newWorker.state: ' + newWorker.state)
+
+            // "installing" - the install event has fired, but not yet complete
+            // "installed"  - install complete
+            // "activating" - the activate event has fired, but not yet complete
+            // "activated"  - fully active
+            // "redundant"  - discarded. Either failed install, or it's been replaced by a newer version
+
+            newWorker.addEventListener('statechange', () => {
+              console.log('newWorker.statechange(): ' + newWorker.state)
+              switch (newWorker.state) {
+                case 'installed':
+                  // There is a new service worker available, show the notification
+                  if (reg.active) {
+                    notification.className = 'show';
+                  }
+
+                  break;
+              }
+            });
+          })
+
+        }).catch(function (error) {
+          console.log('Registration failed with ' + error); // 註冊失敗
+        });
+
+      navigator.serviceWorker.addEventListener('controllerchange', () => { // ServiceWorkingContainer
+        // This fires when the service worker controlling this page changes
+        // eg a new worker has as skipped waiting and become the new active worker.
+        console.log('ServiceWorkingContainer.controllerchange')
+        window.location.reload();
+      });
+    }
+  </script>
+  <script>
+    document.getElementById('reload').addEventListener('click', function () {
+      newWorker.postMessage({ action: 'skipWaiting' });
+    });
+  </script>
+</body>
+
+</html>
