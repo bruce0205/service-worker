@@ -1,4 +1,4 @@
-let CACHE = 'v74';
+let CACHE = 'v117';
 
 const PRECACHE_URLS = [
   '/',

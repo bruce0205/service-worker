@@ -6,7 +6,6 @@
   <script src="/jquery.min.js"></script>
   <link rel="manifest" href="/manifest.json">
   <link rel="stylesheet" href="/bootstrap.min.css">
-  <link rel="stylesheet" href="/bootstrap-theme.min.css">
   <script src="/bootstrap.min.js"></script>
   <style>
     html {
@@ -21,89 +20,115 @@
 </head>
 
 <body>
-  <div class="container-full">
-    <nav class="navbar navbar-inverse navbar-static-top">
-      <div class="container">
-        <a class="navbar-brand" href="/">Express HTML</a>
-        <ul class="nav navbar-nav">
-          <li class="active">
-            <a href="/">Home</a>
-          </li>
-          <li>
-            <a href="/about">About</a>
-          </li>
-          <li>
-            <a href="/sitemap">Sitemap</a>
-          </li>
-          <li id="notification" class="hidden">
-            <a style="cursor: pointer" id="reload">Update</a>
-          </li>
-        </ul>
-      </div>
-    </nav>
-    <div class="jumbotron" style="padding:40px;">
-      <h1>Hello, world! 74</h1>
-      <img src="./dice2.png" height="150" />
-      <p><a class="btn btn-primary btn-lg" href="#" role="button">Learn more</a></p>
+  <nav class="navbar navbar-expand-sm navbar-light bg-light">
+    <a class="navbar-brand" href="#">PWA</a>
+    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent"
+      aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav mr-auto">
+        <li class="nav-item">
+          <a class="nav-link" href="#">Home <span class="sr-only">(current)</span></a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="#">Link</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="javascript:doCheck()">Check</a>
+        </li>
+        <li id="notification" class="nav-item d-none">
+          <a id="reload" class="nav-link" style="cursor: pointer">Update</a>
+        </li>
+      </ul>
     </div>
+  </nav>
+
+  <div class="jumbotron" style="padding:40px;">
+    <h1>Hello, world! v117</h1>
+    <img id="dice" height="150" />
+    <p><a class="btn btn-primary btn-lg" href="javascript:changeDice()" role="button">Dice</a></p>
   </div>
 
   <script>
+    $(document).ready(doRegister)
+    $(document).ready(changeDice)
+
+    let diceFlag = true
     let register
     let newWorker
     let refreshing
     let notification = document.getElementById('notification');
+    let dice = document.getElementById('dice');
 
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js') // 註冊 Service Worker
-        .then(function (reg) {
-          register = reg
-          reg.installing; // the installing worker, or undefined
-          reg.waiting; // the waiting worker, or undefined
-          reg.active; // the active worker, or undefined
+    function changeDice () {
+      if (diceFlag) {
+        dice.src = 'dice2.png'
+      } else {
+        dice.src = 'dice4.png'
+      }
+      diceFlag = !diceFlag
+    }
 
-          if (reg.waiting) {
-            console.log('register waiting working')
-            newWorker = reg.waiting
-            notification.className = 'show';
-          }
+    function doCheck() {
+      console.log(register.waiting)
+      // doRegister()
+      register.update()
+    }
+    function doRegister() {
+      console.log('doRegister')
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/sw.js') // 註冊 Service Worker
+          .then(function (reg) {
+            register = reg
+            reg.installing; // the installing worker, or undefined
+            reg.waiting; // the waiting worker, or undefined
+            reg.active; // the active worker, or undefined
 
-          reg.addEventListener('updatefound', () => {
-            // A wild service worker has appeared in reg.installing!
-            console.log('updatefound')
-            newWorker = reg.installing;
-            console.log('newWorker.state: ' + newWorker.state)
+            if (reg.waiting) {
+              console.log('register waiting working')
+              newWorker = reg.waiting
+              notification.className = 'show';
+            }
 
-            // "installing" - the install event has fired, but not yet complete
-            // "installed"  - install complete
-            // "activating" - the activate event has fired, but not yet complete
-            // "activated"  - fully active
-            // "redundant"  - discarded. Either failed install, or it's been replaced by a newer version
+            reg.addEventListener('updatefound', () => {
+              // A wild service worker has appeared in reg.installing!
+              console.log('updatefound')
+              newWorker = reg.installing;
+              console.log('newWorker.state: ' + newWorker.state)
 
-            newWorker.addEventListener('statechange', () => {
-              console.log('newWorker.statechange(): ' + newWorker.state)
-              switch (newWorker.state) {
-                case 'installed':
-                  // There is a new service worker available, show the notification
-                  if (reg.active) {
-                    notification.className = 'show';
-                  }
+              // "installing" - the install event has fired, but not yet complete
+              // "installed"  - install complete
+              // "activating" - the activate event has fired, but not yet complete
+              // "activated"  - fully active
+              // "redundant"  - discarded. Either failed install, or it's been replaced by a newer version
 
-                  break;
-              }
-            });
-          })
+              newWorker.addEventListener('statechange', () => {
+                console.log('newWorker.statechange(): ' + newWorker.state)
+                switch (newWorker.state) {
+                  case 'installed':
+                    // There is a new service worker available, show the notification
+                    if (reg.active) {
+                      notification.className = 'show';
+                    }
 
-        }).catch(function (error) {
-          console.log('Registration failed with ' + error); // 註冊失敗
+                    break;
+                }
+              });
+            })
+
+          }).catch(function (error) {
+            console.log('Registration failed with ' + error); // 註冊失敗
+          });
+
+        navigator.serviceWorker.addEventListener('controllerchange', () => { // ServiceWorkingContainer
+          // This fires when the service worker controlling this page changes
+          // eg a new worker has as skipped waiting and become the new active worker.
+          console.log('ServiceWorkingContainer.controllerchange')
+          window.location.reload();
         });
-
-      navigator.serviceWorker.addEventListener('controllerchange', () => { // ServiceWorkingContainer
-        // This fires when the service worker controlling this page changes
-        // eg a new worker has as skipped waiting and become the new active worker.
-        console.log('ServiceWorkingContainer.controllerchange')
-        window.location.reload();
-      });
+      }
     }
   </script>
   <script>
